@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download M3U File</title>
+</head>
+<body>
+    <h2>Generating M3U File...</h2>
+    <p>Please wait, your download will start automatically.</p>
+
+    <script>
+      (async () => {
+    const apiUrl = "https://api.github.com/repos/UzunMuhalefet/streams/contents/myvideo-az";
+    const baseUrl = "https://raw.githubusercontent.com/UzunMuhalefet/streams/refs/heads/main/myvideo-az/";
+
+    try {
+        // Fetch file list from GitHub API
+        const response = await fetch(apiUrl, { headers: { "Accept": "application/vnd.github.v3+json" } });
+        if (!response.ok) throw new Error("Failed to fetch GitHub API.");
+        const files = await response.json();
+
+        // Get current date-time for filename
+        const now = new Date();
+        const timestamp = now.getFullYear() + 
+                          String(now.getMonth() + 1).padStart(2, '0') +
+                          String(now.getDate()).padStart(2, '0') + "_" +
+                          String(now.getHours()).padStart(2, '0') +
+                          String(now.getMinutes()).padStart(2, '0');
+        const filename = `aze+${timestamp}.m3u`;
+
+        // M3U Header
+        let m3uContent = "#EXTM3U\n";
+
+        // Function to format tvg-id
+        function formatTvgId(name) {
+            return name
+                .replace(/-/g, '')  // Remove hyphens
+                .replace(/\.M3U8$/i, '')  // Remove .m3u8
+                .replace(/\b\w/g, (char, index, str) => 
+                    (str.substring(index, index + 2).toLowerCase() === "tv" ? "TV" : char.toUpperCase())
+                ); // Capitalize first letter, ensure "TV" is fully capitalized
+        }
+
+        // Process each `.m3u8` file
+        files.forEach(file => {
+            if (file.name.endsWith(".m3u8")) {
+                let tvgId = formatTvgId(file.name);
+                let displayName = file.name.toUpperCase().replace(/\.M3U8$/i, "").replace(/-/g, ' '); 
+                let streamUrl = `${baseUrl}${file.name}`;
+
+                m3uContent += `#EXTINF:-1 tvg-id="${tvgId}" group-title="Azerbaycan Kanalları",${displayName}\n${streamUrl}\n`;
+            }
+        });
+
+        // Create a blob and trigger download
+        const blob = new Blob([m3uContent], { type: 'audio/x-mpegurl' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        document.querySelector("h2").innerText = "Download Completed!";
+        document.querySelector("p").innerText = "Your M3U file has been saved.";
+
+    } catch (error) {
+        console.error("Error fetching or processing the GitHub API:", error);
+        document.querySelector("h2").innerText = "Error!";
+        document.querySelector("p").innerText = "Failed to generate M3U file.";
+    }
+})();
+
+    </script>
+</body>
+</html>
+
